@@ -80,6 +80,12 @@ export class APIService {
     return this.handleResponse(response);
   }
 
+  // NEW METHOD: Get student absentee hours from database
+  static async getStudentAbsenteeHours() {
+    const response = await this.fetchWithTimeout(`${API_BASE_URL}/get_student_absentee_hours.php`);
+    return this.handleResponse(response);
+  }
+
   static async addStudent(studentData: any) {
     const response = await this.fetchWithTimeout(`${API_BASE_URL}/add_student.php`, {
       method: 'POST',

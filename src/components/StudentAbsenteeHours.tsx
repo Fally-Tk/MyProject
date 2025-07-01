@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, User, AlertTriangle } from 'lucide-react';
+import { Clock, User, AlertTriangle, Calendar, BookOpen } from 'lucide-react';
 import { APIService } from '../utils/api';
 import { LocalDBService } from '../utils/localdb';
 import type { Student } from '../types';
@@ -14,7 +14,9 @@ interface StudentAbsenteeHours {
   absentSessions: Array<{
     date: string;
     course: string;
+    courseCode: string;
     duration: number;
+    timeSlot: string;
   }>;
 }
 
@@ -26,6 +28,7 @@ export default function StudentAbsenteeHours({ students }: StudentAbsenteeHoursP
   const [absenteeHours, setAbsenteeHours] = useState<StudentAbsenteeHours[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedField, setSelectedField] = useState<string>('');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadAbsenteeHours();
@@ -34,20 +37,28 @@ export default function StudentAbsenteeHours({ students }: StudentAbsenteeHoursP
   const loadAbsenteeHours = async () => {
     try {
       setLoading(true);
+      setError(null);
       
-      // Calculate absentee hours for each student
+      // Get absentee data from the database
+      const absenteeData = await APIService.getStudentAbsenteeHours();
+      
+      // Process the data to calculate hours for each student
       const hoursData: StudentAbsenteeHours[] = students.map(student => {
-        // Demo calculation - in real app, this would come from attendance records
-        const randomAbsentHours = Math.floor(Math.random() * 20);
-        const sessions = [];
-        
-        for (let i = 0; i < Math.floor(randomAbsentHours / 2); i++) {
-          sessions.push({
-            date: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-            course: `Course ${i + 1}`,
-            duration: 2 // 2 hours per session
-          });
-        }
+        // Find all absentee records for this student
+        const studentAbsences = absenteeData.filter((record: any) => 
+          record.studentId === student.id || record.matricule === student.matricule
+        );
+
+        // Calculate total hours and sessions
+        const absentSessions = studentAbsences.map((absence: any) => ({
+          date: absence.date,
+          course: absence.courseTitle,
+          courseCode: absence.courseCode,
+          duration: calculateSessionDuration(absence.timeSlot),
+          timeSlot: absence.timeSlot
+        }));
+
+        const totalAbsentHours = absentSessions.reduce((sum, session) => sum + session.duration, 0);
 
         return {
           studentId: student.id,
@@ -55,16 +66,43 @@ export default function StudentAbsenteeHours({ students }: StudentAbsenteeHoursP
           matricule: student.matricule,
           field: student.field,
           level: student.level,
-          totalAbsentHours: randomAbsentHours,
-          absentSessions: sessions
+          totalAbsentHours,
+          absentSessions
         };
       });
 
       setAbsenteeHours(hoursData);
+      
+      // Cache the processed data
+      LocalDBService.cacheData('rollcall_cached_absentee_hours', hoursData);
+
     } catch (error) {
       console.error('Failed to load absentee hours:', error);
+      setError('Failed to load absentee hours data. Please try again.');
+      
+      // Try to load from cache as fallback
+      const cachedData = LocalDBService.getCachedData('rollcall_cached_absentee_hours');
+      if (cachedData) {
+        setAbsenteeHours(cachedData);
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const calculateSessionDuration = (timeSlot: string): number => {
+    if (!timeSlot) return 2; // Default 2 hours
+    
+    try {
+      const [startTime, endTime] = timeSlot.split(' - ');
+      const start = new Date(`2000-01-01 ${startTime}`);
+      const end = new Date(`2000-01-01 ${endTime}`);
+      const diffInMs = end.getTime() - start.getTime();
+      const diffInHours = diffInMs / (1000 * 60 * 60);
+      return Math.max(diffInHours, 1); // Minimum 1 hour
+    } catch (error) {
+      console.error('Error calculating session duration:', error);
+      return 2; // Default 2 hours
     }
   };
 
@@ -88,6 +126,24 @@ export default function StudentAbsenteeHours({ students }: StudentAbsenteeHoursP
           <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent mx-auto mb-4"></div>
           <p className="text-black">Loading absentee hours...</p>
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border-2 border-red-600 rounded-xl p-6">
+        <div className="flex items-center space-x-2 mb-2">
+          <AlertTriangle className="w-5 h-5 text-red-600" />
+          <h3 className="font-bold text-red-600">Error Loading Data</h3>
+        </div>
+        <p className="text-red-600 text-sm mb-4">{error}</p>
+        <button
+          onClick={loadAbsenteeHours}
+          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+        >
+          Try Again
+        </button>
       </div>
     );
   }
@@ -228,13 +284,21 @@ export default function StudentAbsenteeHours({ students }: StudentAbsenteeHoursP
                   <td className="px-6 py-4">
                     <div className="text-sm text-black">
                       {data.absentSessions.slice(0, 2).map((session, index) => (
-                        <div key={index} className="mb-1">
-                          {session.course} ({session.duration}h) - {new Date(session.date).toLocaleDateString()}
+                        <div key={index} className="mb-1 flex items-center space-x-2">
+                          <BookOpen className="w-3 h-3" />
+                          <span>{session.course} ({session.duration}h)</span>
+                          <Calendar className="w-3 h-3" />
+                          <span>{new Date(session.date).toLocaleDateString()}</span>
                         </div>
                       ))}
                       {data.absentSessions.length > 2 && (
                         <div className="text-blue-600 font-medium">
-                          +{data.absentSessions.length - 2} more
+                          +{data.absentSessions.length - 2} more sessions
+                        </div>
+                      )}
+                      {data.absentSessions.length === 0 && (
+                        <div className="text-green-600 font-medium">
+                          Perfect attendance!
                         </div>
                       )}
                     </div>
