@@ -5,10 +5,11 @@ define('DB_NAME', 'rollcall_system');
 define('DB_USER', 'root');
 define('DB_PASS', '');
 
-// CORS headers
+// CORS headers - Allow access from any origin for development
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+header('Access-Control-Allow-Credentials: true');
 header('Content-Type: application/json');
 
 // Handle preflight requests
@@ -28,8 +29,6 @@ try {
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_EMULATE_PREPARES => false,
         ]
-
-        
     );
     
 } catch (PDOException $e) {

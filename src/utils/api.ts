@@ -1,4 +1,6 @@
-const API_BASE_URL = 'http://localhost/api_update' ;
+// Update API base URL to use your computer's IP address
+// Replace 'YOUR_COMPUTER_IP' with your actual IP address
+const API_BASE_URL = 'http://YOUR_COMPUTER_IP/api_update';
 
 export class APIService {
   private static async fetchWithTimeout(
