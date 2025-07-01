@@ -1,7 +1,7 @@
 {
-  "name": "Rollcall & Timetable Management",
-  "short_name": "Rollcall",
-  "description": "PWA for university discipline masters to manage attendance and timetables",
+  "name": "IME Rollcall & Timetable Management",
+  "short_name": "IME Rollcall",
+  "description": "PWA for IME Business and Engineering School discipline masters to manage attendance and timetables",
   "theme_color": "#3B82F6",
   "background_color": "#ffffff",
   "display": "standalone",

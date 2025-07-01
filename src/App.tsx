@@ -9,15 +9,19 @@ import Reports from './pages/Reports';
 import Fields from './pages/Fields';
 import Students from './pages/Students';
 import Settings from './pages/Settings';
+import AdminManagement from './pages/AdminManagement';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import { SyncService } from './utils/sync';
 import { useTheme } from './hooks/useTheme';
+import { APIService } from './utils/api';
 
 interface User {
   id: string;
   name: string;
   email: string;
   role: string;
+  department?: string;
+  employee_id?: string;
 }
 
 function App() {
@@ -62,16 +66,37 @@ function App() {
     setLoginError(null);
 
     try {
-      // Simulate API call - replace with actual authentication
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Try real authentication first
+      try {
+        const response = await APIService.authenticateAdmin(credentials);
+        if (response.success && response.user) {
+          const userData: User = {
+            id: response.user.id,
+            name: response.user.name,
+            email: response.user.email,
+            role: response.user.role,
+            department: response.user.department,
+            employee_id: response.user.employee_id
+          };
 
-      // Demo credentials check
+          setUser(userData);
+          localStorage.setItem('rollcall_user_data', JSON.stringify(userData));
+          localStorage.setItem('rollcall_auth_token', response.token);
+          return;
+        }
+      } catch (apiError) {
+        console.log('API authentication failed, trying demo credentials...');
+      }
+
+      // Fallback to demo credentials
       if (credentials.email === 'admin@university.edu' && credentials.password === 'admin123') {
         const userData: User = {
           id: '1',
           name: 'Dr. John Smith',
           email: credentials.email,
-          role: 'Discipline Master'
+          role: 'Discipline Master',
+          department: 'Computer Science',
+          employee_id: 'EMP001'
         };
 
         setUser(userData);
@@ -128,6 +153,7 @@ function App() {
             <Route path="reports" element={<Reports />} />
             <Route path="fields" element={<Fields />} />
             <Route path="students" element={<Students />} />
+            <Route path="admin" element={<AdminManagement />} />
             <Route path="settings" element={<Settings />} />
           </Route>
         </Routes>

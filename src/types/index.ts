@@ -120,3 +120,14 @@ export interface TimetableEntry {
   room: string;
   lecturer: string;
 }
+
+export interface AdminUser {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  department: string;
+  role: string;
+  employee_id: string;
+  created_at: string;
+}

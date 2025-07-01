@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AlertCircle, CheckCircle, Clock, Users, MapPin, Phone, MessageCircle, Filter, Eye, Calendar, BookOpen, X, Ban } from 'lucide-react';
+import { AlertCircle, CheckCircle, Clock, Users, MapPin, Phone, MessageCircle, Filter, Eye, Calendar, BookOpen, X, Ban, ArrowRight } from 'lucide-react';
 import { APIService } from '../utils/api';
 import { LocalDBService } from '../utils/localdb';
 import { SyncService } from '../utils/sync';
@@ -169,9 +169,16 @@ IME Discipline Master`;
       // Remove the session from available sessions
       setAvailableSessions(prev => prev.filter(session => session.id !== selectedSession.id));
       
-      // Show absentee summary
-      setShowAbsentees(true);
-      setSelectedSession(null);
+      // Show absentee summary if there are absentees
+      if (absenteeRecords.length > 0) {
+        setShowAbsentees(true);
+      } else {
+        // If no absentees, show success and go back to sessions
+        setTimeout(() => {
+          setSelectedSession(null);
+          setSuccessMessage(null);
+        }, 3000);
+      }
 
       // Clear success message after 5 seconds
       setTimeout(() => setSuccessMessage(null), 5000);
@@ -300,12 +307,24 @@ IME Discipline Master`;
                 {selectedAbsenteeGroup.absentees.length} students absent from {selectedAbsenteeGroup.fieldName}
               </p>
             </div>
-            <button
-              onClick={() => setSelectedAbsenteeGroup(null)}
-              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-            >
-              ← Back to Summary
-            </button>
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => setSelectedAbsenteeGroup(null)}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                ← Back to Summary
+              </button>
+              <button
+                onClick={() => {
+                  setShowAbsentees(false);
+                  setSelectedSession(null);
+                  setAbsentees([]);
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Back to Sessions
+              </button>
+            </div>
           </div>
 
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
@@ -395,12 +414,25 @@ IME Discipline Master`;
               {absentees.length} total students absent from {absenteeGroups.length} courses
             </p>
           </div>
-          <button
-            onClick={() => setShowAbsentees(false)}
-            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-          >
-            Back to Sessions
-          </button>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => window.location.href = '/reports'}
+              className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            >
+              <ArrowRight className="w-4 h-4" />
+              <span>View in Reports</span>
+            </button>
+            <button
+              onClick={() => {
+                setShowAbsentees(false);
+                setSelectedSession(null);
+                setAbsentees([]);
+              }}
+              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              Back to Sessions
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -506,66 +538,7 @@ IME Discipline Master`;
                 </span>
               )}
             </div>
-            
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Filter className="w-4 h-4" />
-              <span>More Filters</span>
-            </button>
           </div>
-
-          {/* Additional Filters */}
-          {showFilters && (
-            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Additional Filters</h3>
-                <button
-                  onClick={() => setShowFilters(false)}
-                  className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Level
-                  </label>
-                  <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
-                    <option value="">All Levels</option>
-                    <option value="Level 100">Level 100</option>
-                    <option value="Level 200">Level 200</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Room
-                  </label>
-                  <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
-                    <option value="">All Rooms</option>
-                    {[...new Set(availableSessions.map(s => s.room))].map(room => (
-                      <option key={room} value={room}>{room}</option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Time Slot
-                  </label>
-                  <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
-                    <option value="">All Times</option>
-                    {[...new Set(availableSessions.map(s => `${s.startTime} - ${s.endTime}`))].map(time => (
-                      <option key={time} value={time}>{time}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       )}
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, ClipboardList, FileText, Calendar, Users, Settings, LogOut, User, BookOpen } from 'lucide-react';
+import { Home, ClipboardList, FileText, Calendar, Users, Settings, LogOut, User, BookOpen, Shield } from 'lucide-react';
 
 interface User {
   id: string;
@@ -27,6 +27,7 @@ export default function Sidebar({ isOpen, onClose, onLogout, onProfileClick, use
     { path: '/reports', label: 'Reports', icon: FileText },
     { path: '/fields', label: 'Fields', icon: BookOpen },
     { path: '/students', label: 'Students', icon: Users },
+    { path: '/admin', label: 'Admin Management', icon: Shield },
     { path: '/settings', label: 'Settings', icon: Settings },
   ];
 
